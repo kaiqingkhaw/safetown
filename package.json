@@ -1,0 +1,13 @@
+{
+  "name": "safetown",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Community hazard reporting and resident-verified repairs",
+  "scripts": {
+    "start": "node scripts/serve.cjs",
+    "test": "node --check public/app.js && node tests/smoke.cjs",
+    "build": "node scripts/build.cjs",
+    "check": "npm test && npm run build"
+  },
+  "engines": { "node": ">=22" }
+}
