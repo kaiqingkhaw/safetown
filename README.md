@@ -2,6 +2,8 @@
 
 **Report. Repair. Verify.**
 
+[![Project checks](https://github.com/kaiqingkhaw/safetown/actions/workflows/checks.yml/badge.svg)](https://github.com/kaiqingkhaw/safetown/actions/workflows/checks.yml)
+
 A community safety prototype for tracking walking hazards from a resident report to a resident-verified repair. Developed for the University Hackathon 2026 People track.
 
 ![SafeTown interface](docs/preview.png)
@@ -19,7 +21,7 @@ npm start
 Open **http://127.0.0.1:5173**. No package installation, account, API key or environment file is required. Keep using the same browser address to preserve demo records.
 
 ```sh
-npm test       # Syntax and 13 focused regression assertions
+npm test       # Syntax and focused regression checks
 npm run build  # Creates dist/ and the portable dist/SafeTown.html
 ```
 
@@ -67,7 +69,7 @@ The app is not an emergency service. Do not upload sensitive photos or personal 
 
 ## Collaboration and access
 
-The repository owner can invite teammates through GitHub repository **Settings → Collaborators**. Use a separate branch for each change and a pull request for review. Making the repository public does not give visitors permission to push.
+The repository owner can invite teammates through GitHub repository **Settings â†’ Collaborators**. Use a separate branch for each change and a pull request for review. Making the repository public does not give visitors permission to push.
 
 No open-source licence has been selected. 
 
