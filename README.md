@@ -65,12 +65,9 @@ Priority suggestions use category and access rules. Routes are not validated nav
 
 The app is not an emergency service. Do not upload sensitive photos or personal information to a public demo.
 
-## Submission status
-
-The working prototype is one part of the submission. Real validation evidence, the final pitch deck, the recorded video and judge-accessible links are separate deliverables. See [project scope](docs/PROJECT.md) and [verification notes](docs/VERIFICATION.md).
-
 ## Collaboration and access
 
 The repository owner can invite teammates through GitHub repository **Settings → Collaborators**. Use a separate branch for each change and a pull request for review. Making the repository public does not give visitors permission to push.
 
-No open-source licence has been selected. The team should decide its licensing and competition-disclosure obligations before public release.
+No open-source licence has been selected. 
+

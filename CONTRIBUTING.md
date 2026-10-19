@@ -49,6 +49,7 @@ Suggested review settings, if available for this account: one approving review a
 
 ## Hosting later
 
-This static app can be deployed from the `public/` folder or built `dist/` folder. Repository access and website access are different. Choose hosting and audience deliberately; a private repository link is not automatically accessible to judges.
+This static app can be deployed from the `public/` folder or built `dist/` folder. Repository access and website access are different. Choose hosting and audience deliberately; a private repository does not provide a publicly accessible demo.
 
 Official references: [upload existing code](https://docs.github.com/en/migrations/importing-source-code/using-the-command-line-to-import-source-code/adding-locally-hosted-code-to-github), [invite collaborators](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/repository-access-and-collaboration/inviting-collaborators-to-a-personal-repository).
+
