@@ -98,10 +98,30 @@ function seed() {
     },
   ];
 }
-let reports;
+function validReport(r) {
+  const date = (value) => typeof value === "string" && Number.isFinite(Date.parse(value));
+  const photo = (value) => !value || (typeof value === "string" && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(value));
+  return !!r && typeof r === "object" &&
+    typeof r.id === "string" && /^ST-\d+$/.test(r.id) &&
+    ["title", "description", "location", "category", "priority", "status"].every(k => typeof r[k] === "string") &&
+    ["Reported", "In progress", "Awaiting verification", "Resolved"].includes(r.status) &&
+    Number.isInteger(r.votes) && r.votes >= 0 && date(r.created) &&
+    Array.isArray(r.events) && r.events.every(e => e && typeof e.text === "string" && date(e.at)) &&
+    photo(r.photo) && photo(r.repairPhoto) &&
+    (!r.previousRepairs || (Array.isArray(r.previousRepairs) && r.previousRepairs.every(p => p && photo(p.photo) && date(p.at))));
+}
+function decodeReports(raw) {
+  if (raw === null) return seed();
+  const saved = JSON.parse(raw);
+  if (!Array.isArray(saved) || !saved.every(validReport) || new Set(saved.map(r => r.id)).size !== saved.length)
+    throw Error("Saved reports are not valid.");
+  return saved;
+}
+let reports, unreadableRecords = null;
 try {
-  reports = JSON.parse(localStorage.getItem(KEY)) || seed();
-  if (!Array.isArray(reports)) reports = seed();
+  const raw = localStorage.getItem(KEY);
+  try { reports = decodeReports(raw); }
+  catch { unreadableRecords = raw; reports = seed(); }
 } catch {
   reports = seed();
 }
@@ -113,6 +133,10 @@ let routePreference = "standard";
 const app = document.querySelector("#app"),
   modal = document.querySelector("#modal");
 function save() {
+  if (unreadableRecords !== null) {
+    toast("Saved records could not be loaded. Download the recovery copy, then reset sample data to continue.");
+    return false;
+  }
   try {
     localStorage.setItem(KEY, JSON.stringify(reports));
     return true;
@@ -419,53 +443,21 @@ function insights() {
 }
 
 function demo() {
-  return (
-    heading(
-      "One report. A complete story.",
-      "A repeatable walkthrough for your hackathon demonstration.",
-      false,
-    ) +
-    `<div class="columns"><section class="panel" style="padding:27px"><h2>Your 5-minute demo</h2><div class="steps">${[
-      [
-        "0:00–0:35 · The problem",
-        "Residents may report a hazard but struggle to see what happens next. Introduce this as a hypothesis until interviews support it.",
-      ],
-      [
-        "0:35–1:25 · Report it",
-        "Show the duplicate suggestion for a lakeside lighting fault. Then create a distinct issue at Park Entrance, add access context and a photo, and explain the editable triage rule.",
-      ],
-      [
-        "1:25–2:00 · Build shared awareness",
-        "Open the new community report and confirm the hazard. Show the status timeline.",
-      ],
-      [
-        "2:00–3:10 · Take accountable action",
-        "Switch to Management desk. Assign the report and begin work. Upload a repair photo and submit it for resident verification.",
-      ],
-      [
-        "3:10–3:50 · Close the loop",
-        "Return to the resident report. Inspect the repair photo and verify the repair, or reopen it if the problem remains.",
-      ],
-      [
-        "3:50–4:20 · Explore the route concept",
-        "Show the two illustrative routes and explain the limits of unverified community reports.",
-      ],
-      [
-        "4:20–5:00 · Pilot and value",
-        "Propose a pilot in one precinct. Measure acknowledgement time, verified resolution time, and reopened reports. Do not claim unmeasured improvements.",
-      ],
-    ]
-      .map(
-        ([t, p]) =>
-          `<div class="step"><div><h3>${t}</h3><p>${p}</p></div></div>`,
-      )
-      .join(
-        "",
-      )}</div></section><div><section class="card"><div class="eyebrow">Built for the People track</div><h2>Accountability beyond the report.</h2><p>SafeTown connects resident reporting, management progress, repair evidence, and resident verification in one understandable journey.</p><h3>Working in this prototype</h3><p>Photo uploads · Editable triage rules · Status changes · Community confirmations · Repair evidence · Reopen workflow · Local persistence · JSON export</p><h3>Concepts, not live services</h3><p>AI image classification, real maps and routing, multi-user accounts, cloud storage, automated messaging, and external management integrations.</p><h3>Proposed pilot measures</h3><p>Time to acknowledge · Time to verified repair · Percentage reopened · Resident task completion</p><button class="btn secondary" data-action="export">Download current demo data ↓</button></section></div></div>`
-  );
+  const steps = [
+    ["Check nearby reports", "Search your location first. If the same issue is already open, add an observation to its existing report."],
+    ["Describe the issue", "Choose a location and category, explain who is affected, and add a photo if helpful. Review the suggested priority before submitting."],
+    ["Follow the repair", "Open a report to see the assigned team, public updates and repair evidence. Reports remain open while the repair awaits verification."],
+    ["Check the result", "After checking the location, confirm the repair or explain what still needs attention. Reopened reports retain their original history."]
+  ];
+  return heading("From a report to a checked repair.", "A short guide to using SafeTown.", false) +
+    `<div class="columns"><section class="panel" style="padding:27px"><h2>How it works</h2><div class="steps">${steps.map(([title, text]) => `<div class="step"><div><h3>${title}</h3><p>${text}</p></div></div>`).join("")}</div><button class="btn" data-action="report">Report an issue →</button></section><section class="card"><div class="eyebrow">ABOUT THIS PROTOTYPE</div><h2>Try the complete workflow.</h2><p>Use Community reports as the resident and Management desk as the maintenance team. Role switching demonstrates the workflow; it is not a sign-in system.</p><h3>Saved on this device</h3><p>Reports and photos stay in this browser. They are not shared with other residents or sent to a maintenance team. Export records before clearing browser data.</p><h3>Reported conditions</h3><p>Priority suggestions follow category and access rules. The sample map and routes are illustrative, not verified navigation.</p><button class="btn secondary" data-action="export">Export records ↓</button></section></div>`;
+}
+function pageName(hash) {
+  const name = hash.slice(1);
+  return ["overview", "reports", "manage", "routes", "insights", "demo"].includes(name) ? name : "overview";
 }
 function render() {
-  const page = location.hash.slice(1) || "overview";
+  const page = pageName(location.hash);
   document
     .querySelectorAll("nav a")
     .forEach((a) => a.classList.toggle("active", a.hash === "#" + page));
@@ -479,6 +471,7 @@ function render() {
       demo,
     }[page] || overview
   )();
+  if (unreadableRecords !== null) app.innerHTML = `<div class="notice" role="alert">Saved reports could not be loaded. Your original data has not been replaced. <button class="btn secondary" data-action="recover">Download recovery copy</button> Then use Reset sample data to continue.</div>` + app.innerHTML;
   if (page === "reports") cards();
   document.querySelector(".profile").innerHTML =
     page === "manage"
@@ -492,7 +485,7 @@ function show(content) {
   modal.querySelector(".close")?.focus({ preventScroll: true });
 }
 const closeHead = (title) =>
-  `<div class="modal-head"><h2>${title}</h2><button class="close" data-action="close" aria-label="Close dialog">×</button></div>`;
+  `<div class="modal-head"><h2 id="dialog-title">${title}</h2><button class="close" data-action="close" aria-label="Close dialog">×</button></div>`;
 function reportForm() {
   show(
     closeHead("Report a neighbourhood issue") +
@@ -617,6 +610,14 @@ document.addEventListener("click", (e) => {
   if (t.dataset.action === "close") modal.close();
   if (t.dataset.action === "report") reportForm();
   if (t.dataset.action === "export") exportData();
+  if (t.dataset.action === "recover" && unreadableRecords !== null) {
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(new Blob([unreadableRecords], {type: "application/json"}));
+    link.href = url;
+    link.download = "safetown-recovery.json";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
   if (t.dataset.detail) detail(t.dataset.detail);
   if (t.dataset.manage) detail(t.dataset.manage, true);
   if (t.dataset.route) {
@@ -837,6 +838,8 @@ document.querySelector("#reset").onclick = () => {
       '<p class="subtitle">This removes locally created demo reports and photos and restores four illustrative records. Export your records first if needed.</p><div class="actions"><button class="btn secondary" data-action="close">Keep my reports</button><button class="btn" id="confirm-reset">Reset sample data</button></div>',
   );
   document.querySelector("#confirm-reset").onclick = () => {
+    const recovery = unreadableRecords;
+    unreadableRecords = null;
     if (
       commitChange(() => {
         reports = seed();
@@ -846,6 +849,8 @@ document.querySelector("#reset").onclick = () => {
       modal.close();
       render();
       toast("Sample records restored.");
+    } else {
+      unreadableRecords = recovery;
     }
   };
 };
