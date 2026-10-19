@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SafeTown · Report. Repair. Verify.</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#app">Skip to content</a>
+    <aside>
+      <a class="brand" href="#overview"
+        ><span class="brand-icon">S</span>SafeTown<span class="brand-dot"
+          >.</span
+        ></a
+      >
+      <div class="community">
+        YOUR NEIGHBOURHOOD<strong>Seri Rimba</strong
+        ><small>Illustrative township · Malaysia</small>
+      </div>
+      <nav>
+        <a href="#overview">◫ <span>Overview</span></a
+        ><a href="#reports">◎ <span>Community reports</span></a
+        ><a href="#routes">⌁ <span>Walking routes</span></a
+        ><a href="#manage">▤ <span>Management desk</span></a
+        ><a href="#insights">▥ <span>Pilot & measures</span></a
+        ><a href="#demo">▷ <span>Demo & project</span></a>
+      </nav>
+      <div class="aside-bottom">
+        <div class="mini-mark">✧</div>
+        <strong>A report is a start.<br />Follow-through matters.</strong>
+        <p>One place to see what happens next.</p>
+        <button class="quiet" id="reset">Reset sample data ↻</button>
+      </div>
+    </aside>
+    <div class="shell">
+      <header>
+        <div>
+          <span class="live-dot"></span> Community safety hub
+          <span class="demo-label">LOCAL DEMO / V2</span>
+        </div>
+        <div class="profile">
+          <span class="avatar">AR</span
+          ><span>Aina Rahman<small>Demo resident</small></span>
+        </div>
+      </header>
+      <main id="app" tabindex="-1" aria-label="SafeTown workspace"></main>
+      <footer>
+        SafeTown · University Hackathon 2026
+        <span
+          >Demo data · Saved in this browser only · Not an emergency
+          service</span
+        >
+      </footer>
+    </div>
+    <dialog id="modal"><div id="modal-content"></div></dialog>
+    <div id="toast" role="status"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
