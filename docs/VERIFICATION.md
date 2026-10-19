@@ -31,3 +31,9 @@ The focused assertions cover rule-based triage, duplicate matching, follow-up ti
 ## Limits
 
 This is not an exhaustive accessibility, security, browser-compatibility or load audit. There is no live multi-user backend, verified map, external notification service or real-world impact study. The test image is a screenshot used as a file-upload fixture, not actual repair evidence. Local browser records are editable and are not independently verified audit records.
+
+## 19 October reliability update
+
+Automated regression checks now also cover unknown and inherited-property route names, malformed saved JSON, invalid report structures, duplicate IDs, invalid image URLs and preventing writes over unreadable saved records. The static and portable builds pass.
+
+The resident guide replaces the pitch-rehearsal page. Dialog headings are linked through aria-labelledby. This update has not had a fresh visual browser check: the local preview connection timed out. The earlier browser results above refer to the 18 October version.
