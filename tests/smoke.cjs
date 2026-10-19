@@ -1,5 +1,5 @@
 // Focused regression tests for the prototype's triage, follow-up, and storage rules.
-// Run: node tests.cjs
+// Run: npm test
 const fs = require("fs"),
   vm = require("vm"),
   assert = require("assert");
@@ -97,7 +97,24 @@ assert.equal(
   run("esc('<img onerror=alert(1)>')"),
   "&lt;img onerror=alert(1)&gt;",
 );
-console.log(
-  "PASS: 13 regression assertions (triage, duplicate matching, follow-up timing, sample exclusion, storage rollback, persistence, escaping).",
-);
-
+for (const hash of ["", "#missing", "#__proto__", "#constructor", "#toString"]) {
+  assert.equal(run(`pageName(${JSON.stringify(hash)})`), "overview");
+  sandbox.location.hash = hash;
+  assert.doesNotThrow(() => run("render()"));
+}
+assert.equal(run("pageName('#reports')"), "reports");
+assert.equal(run("decodeReports(null).length"), 4);
+assert.equal(run("decodeReports('[]').length"), 0);
+assert.equal(run("decodeReports(JSON.stringify(seed())).length"), 4);
+for (const raw of ['{', 'null', '{}', '[null]', '[{}]']) {
+  assert.throws(() => run(`decodeReports(${JSON.stringify(raw)})`));
+}
+assert.throws(() => run("decodeReports(JSON.stringify([seed()[0], seed()[0]]))"));
+assert.equal(run("validReport({...seed()[0], photo: 'bad-image'})"), false);
+assert.equal(run("validReport({...seed()[0], events: null})"), false);
+run("unreadableRecords = 'broken data'");
+const savedBeforeRecovery = stored.get("safetown-v2");
+assert.equal(run("commitChange(()=>reports[0].votes++)"), false);
+assert.equal(stored.get("safetown-v2"), savedBeforeRecovery);
+run("unreadableRecords = null");
+console.log("PASS: reporting, persistence, invalid routes and saved-data recovery regression checks.");
