@@ -1,4 +1,8 @@
 # SafeTown
+
+Built by **Team Vortex**.
+
+[Try the live prototype](https://kaiqingkhaw.github.io/safetown/public/)
 ### A Clear Path for Everyone
 
 **Report. Restore Access. Verify.**
