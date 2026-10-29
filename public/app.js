@@ -303,7 +303,7 @@ function reportPage() {
       "Every report has a next step.",
       "Check an existing issue, add an observation, or review a repair.",
     ) +
-    `<div class="toolbar"><input id="search" aria-label="Search reports" placeholder="Search by issue, place, or report ID"><select id="filter" aria-label="Filter by status"><option>All statuses</option>${["Reported", "In progress", "Awaiting verification", "Resolved"].map((s) => `<option>${s}</option>`).join("")}</select><button class="btn secondary" data-action="export">Export records ↓</button></div><div class="cards" id="report-cards"></div>`
+    `<div class="toolbar"><input id="search" aria-label="Search reports" placeholder="Search by issue, place, or report ID"><select id="filter" aria-label="Filter by status"><option>All statuses</option>${["Reported", "In progress", "Awaiting verification", "Resolved"].map((s) => `<option>${s}</option>`).join("")}</select><button class="btn secondary" data-action="export">Export records ↓</button><button class="btn secondary" data-action="import">Import backup ↑</button></div><div class="cards" id="report-cards"></div>`
   );
 }
 
@@ -575,6 +575,86 @@ async function readPhoto(file) {
 function event(r, text) {
   r.events.push({ text, at: new Date().toISOString() });
 }
+const BACKUP_LIMIT = 10 * 1024 * 1024;
+function decodeBackup(raw) {
+  if (typeof raw !== "string" || new Blob([raw]).size > BACKUP_LIMIT)
+    throw Error("Choose a backup smaller than 10 MB.");
+  let backup;
+  try { backup = JSON.parse(raw); }
+  catch { throw Error("This file is not valid JSON."); }
+  if (!backup || backup.project !== "SafeTown" ||
+      (backup.schemaVersion !== undefined && backup.schemaVersion !== 1) ||
+      !Array.isArray(backup.reports) || backup.reports.length > 1000)
+    throw Error("Choose a supported SafeTown export with at most 1,000 reports.");
+  const decoded = decodeReports(JSON.stringify(backup.reports));
+  if (decoded.some(r => !["High", "Medium", "Low"].includes(r.priority) ||
+    !locations.includes(r.location) || !Object.hasOwn(icons, r.category) ||
+    !Number.isSafeInteger(Number(r.id.slice(3))) || Number(r.id.slice(3)) >= Number.MAX_SAFE_INTEGER ||
+    ["sample", "confirmed", "everVerified"].some(k => r[k] !== undefined && typeof r[k] !== "boolean") ||
+    ["acknowledgedAt", "lastManagementUpdate", "cycleOpened", "repairedAt", "resolvedAt"].some(k =>
+      r[k] != null && (typeof r[k] !== "string" || !Number.isFinite(Date.parse(r[k]))))))
+    throw Error("The backup contains unsupported report values.");
+  return decoded.map(r => ({
+    ...r, sample: r.sample === undefined ? true : r.sample,
+  }));
+}
+// Compare objects without depending on JSON property order.
+function canonical(value) {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === "object") return Object.fromEntries(
+    Object.keys(value).sort().map(key => [key, canonical(value[key])]),
+  );
+  return value;
+}
+function planImport(existing, incoming) {
+  const byId = new Map(existing.map(r => [r.id, r]));
+  const additions = [], conflicts = [];
+  let duplicates = 0;
+  for (const report of incoming) {
+    const current = byId.get(report.id);
+    if (!current) additions.push(report);
+    else if (JSON.stringify(canonical(current)) === JSON.stringify(canonical(report))) duplicates++;
+    else conflicts.push(report.id);
+  }
+  return { additions, conflicts, duplicates };
+}
+let pendingImport = null;
+let importRevision = 0;
+function importForm() {
+  importRevision++;
+  pendingImport = null;
+  show(closeHead("Import a backup") +
+    '<p class="subtitle">Add records from a SafeTown JSON export. Existing records are never replaced. This transfers local demo data, not verified identities.</p>' +
+    '<label>SafeTown backup (JSON, up to 10 MB)<input id="backup-file" type="file" accept=".json,application/json"></label>' +
+    '<div id="import-preview" role="status" aria-live="polite">Choose a file to preview its records.</div>');
+}
+async function previewImport(file) {
+  const revision = ++importRevision;
+  pendingImport = null;
+  const preview = document.querySelector("#import-preview");
+  if (!file) return;
+  try {
+    if (file.size > BACKUP_LIMIT) throw Error("Choose a backup smaller than 10 MB.");
+    const incoming = decodeBackup(await file.text());
+    if (revision !== importRevision || !modal.open || !document.querySelector("#backup-file")) return;
+    const plan = planImport(reports, incoming);
+    if (plan.conflicts.length) throw Error(`Conflicting report IDs: ${plan.conflicts.join(", ")}. No records imported. Keep both exports and resolve the differences before importing.`);
+    pendingImport = incoming;
+    preview.innerHTML = `<p><strong>${plan.additions.length}</strong> new reports. ${plan.duplicates} identical records will be skipped.</p>` +
+      (plan.additions.length ? '<button class="btn" data-action="apply-import">Add these reports</button>' : '<p>There are no new records to add.</p>');
+  } catch (error) { if (revision === importRevision) preview.textContent = error.message; }
+}
+function applyImport() {
+  if (!pendingImport) return;
+  const plan = planImport(reports, pendingImport);
+  if (plan.conflicts.length) { toast("Records changed since the preview. Choose the backup again."); return; }
+  if (!plan.additions.length) return;
+  if (commitChange(() => { reports.push(...plan.additions); })) {
+    pendingImport = null;
+    modal.close(); render();
+    toast(`${plan.additions.length} reports imported. Existing records were preserved.`);
+  }
+}
 function exportData() {
   const a = document.createElement("a");
   const url = URL.createObjectURL(
@@ -583,6 +663,7 @@ function exportData() {
         JSON.stringify(
           {
             project: "SafeTown",
+            schemaVersion: 1,
             type: "Prototype browser data; not verified operational records",
             exportedAt: new Date().toISOString(),
             reports,
@@ -610,6 +691,8 @@ document.addEventListener("click", (e) => {
   if (t.dataset.action === "close") modal.close();
   if (t.dataset.action === "report") reportForm();
   if (t.dataset.action === "export") exportData();
+  if (t.dataset.action === "import") importForm();
+  if (t.dataset.action === "apply-import") applyImport();
   if (t.dataset.action === "recover" && unreadableRecords !== null) {
     const link = document.createElement("a");
     const url = URL.createObjectURL(new Blob([unreadableRecords], {type: "application/json"}));
@@ -670,6 +753,7 @@ document.addEventListener("input", (e) => {
 });
 document.addEventListener("change", async (e) => {
   if (e.target.id === "filter") cards();
+  if (e.target.id === "backup-file") await previewImport(e.target.files[0]);
   if (e.target.id === "route-preference") {
     routePreference = e.target.value;
     render();
