@@ -2,6 +2,26 @@
 
 Built by **Team Vortex**.
 
+## Portfolio development
+
+This branch extends the Team Vortex hackathon project. The public demo remains the submitted version on `main`.
+
+The first extension adds backup restoration: preview a JSON export, add new reports, skip identical records and reject conflicting report IDs without overwriting local data. Exports now include a schema version; earlier SafeTown exports are also supported. Records stay in the browser. Imported data does not establish verified identities.
+
+To try the extension, clone the `codex/portfolio-backups` branch and run `npm start`. Open Community reports, choose **Import backup**, select a SafeTown export and review the preview before choosing **Add these reports**. Imports accept up to 10 MB and 1,000 reports. If an existing report ID has different contents, the import stops so both copies can be retained for review.
+
+### Engineering decisions
+
+- Import adds new IDs rather than silently replacing current reports.
+- All records are validated before any write.
+- A failed storage write restores the previous in-memory state.
+- Identical records are compared independently of JSON property order.
+- Regression tests cover legacy exports, invalid formats, unsupported versions, duplicate IDs, conflicts and storage failure.
+
+Run `npm run check` for the regression suite and static build. Manual browser verification of the new upload and preview flow is still pending.
+
+The next milestones are shared storage with authenticated roles, controlled photo access and browser workflow tests. These are planned, not implemented. The original hackathon work remains credited to Team Vortex; subsequent changes are recorded in branch commits.
+
 [Try the live prototype](https://kaiqingkhaw.github.io/safetown/public/)
 ### A Clear Path for Everyone
 
